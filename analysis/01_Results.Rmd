@@ -378,7 +378,6 @@ se$condition <- factor(se$condition,
                   "2h DEX >\n16h DEX+KH-103", "2h DEX >\n16h DEX+DMSO",
                   "16h MIF  >\n2h DEX+MIF", "16h Cort113 >\n2h DEX+Cort113", 
                   "16h KH-103 >\n2h DEX+KH-103", "16h DMSO >\n2h DEX+DMSO" ))
-)
 res_int_all <- readRDS(file="../data/results/DE_our_data.rds")
 ```
 
@@ -578,6 +577,23 @@ draw(h1, padding = unit(c(0.2, 0.2, 2, 0.2), "cm"), merge=TRUE)
 dev.off()
 ```
 
+```{r, fig.width=5, fig.height=4}
+deas <- grep("^DEA\\.", colnames(rowData(se)), value=TRUE)
+deas <- lapply(setNames(deas, gsub("^DEA\\.", "", deas)),
+               FUN=function(x) rowData(se)[[x]])
+degs <- lapply(deas, FUN=function(x){
+  row.names(x)[which(x$FDR<0.05)]
+})
+
+e <- scuttle::sumCountsAcrossCells(assays(se2)$scaledLFC[degs2h,], se2$condition2, average=TRUE)
+colnames(e) <- gsub("> ", ">\n", colnames(e))
+h <- hclust(as.dist(1-cor(assay(e))))
+pdf("clustering.pdf", width=5, height=4)
+plot(h, main="Clustering of conditions", xlab="Based on Pearson correlation of the scaled logFC", sub="of genes responding to 2h DEX")
+dev.off()
+```
+
+
 
 ### Looking at peaks
 
@@ -592,13 +608,6 @@ Note that this is restricted to genes that are the closets gene to a GR peak, an
 Heatmap visualizing conditions dmso, untreated, dex 18h, 2h dex>KH103, 2h dex>MIF, 2h dex>Cort113, also show next to it GRtracks at TSS +/-2.5kb and at enhancer, the map needs to be clustered in 3 clusters– hopefully according to the genes that are not inhibited by a given inhibitor (message1: KH103 if given after dex, blocks less good probably compared to mif and cort113) (message 2: The genes that are not blocked cluster by inhibitor – we might be able to infer the way the inhibitor profile/specificity)
 
 ```{r, fig.width=9, fig.height=6}
-deas <- grep("^DEA\\.", colnames(rowData(se)), value=TRUE)
-deas <- lapply(setNames(deas, gsub("^DEA\\.", "", deas)),
-               FUN=function(x) rowData(se)[[x]])
-degs <- lapply(deas, FUN=function(x){
-  row.names(x)[which(x$FDR<0.05)]
-})
-
 dea16h <- deas$`2h DEX > 16h DEX+DMSO`
 degs16h <- row.names(dea16h)[abs(dea16h$logFC)>log2(1.2) & dea16h$FDR<0.01]
 degs16h <- degs16h[!is.na(degs16h)]
